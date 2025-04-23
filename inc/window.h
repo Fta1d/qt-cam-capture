@@ -2,6 +2,9 @@
 #define WINDOW_H
 
 #include <QWidget>
+#include <QCamera>
+#include <QMediaCaptureSession>
+#include <QVideoWidget>
 
 class QPushButton;
 class Window : public QWidget
@@ -12,6 +15,9 @@ class Window : public QWidget
     private slots:
         void slotButtonClicked(bool checked);
     private:
+        QCamera *m_camera;
+        QMediaCaptureSession *m_captureSession;
+        QVideoWidget *m_videoWidget;
         QPushButton *m_button;
 };
 
