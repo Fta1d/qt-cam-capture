@@ -1,31 +1,23 @@
 #include "inc/window.h"
 #include <QPushButton>
+#include <QVBoxLayout>
 #include <QApplication>
 #include <QKeyEvent>
 #include <QTimer>
 
 Window::Window(QWidget *parent) :
-QWidget(parent) {
-    setFixedSize(640, 500);
+QMainWindow(parent) {
+    setFocusPolicy(Qt::StrongFocus);
+    resize(640, 445);
     m_counter = 0;
 
-    setFocusPolicy(Qt::StrongFocus);
-    setProgressBars();
+    tabWidget = new QTabWidget(this);
 
-    m_videoWidget = new QVideoWidget(this);
-    m_videoWidget->setGeometry(0, 0, 640, 390); // x, y, width, height
-
-    m_button = new QPushButton("Start capturing", this);
-    m_button->setGeometry((640 - 100) / 2, 450, 100, 50);
-    m_button->setCheckable(true);
+    setMainTab();
+    setCentralWidget(tabWidget);
 
     connect(m_button, SIGNAL(clicked(bool)), this, SLOT(slotButtonClicked(bool)));
     connect(this, SIGNAL(maxPressesReached()), QApplication::instance(), SLOT(quit()));
-
-    m_camera = new QCamera();
-    m_captureSession = new QMediaCaptureSession();
-    m_captureSession->setCamera(m_camera);
-    m_captureSession->setVideoOutput(m_videoWidget);
 
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &Window::updateProgressBars);
@@ -45,7 +37,7 @@ void Window::keyPressEvent(QKeyEvent *event) {
         down_pressed = true;
     }
 
-    QWidget::keyPressEvent(event);
+    QMainWindow::keyPressEvent(event);
 }
 
 void Window::keyReleaseEvent(QKeyEvent *event) {
@@ -59,7 +51,7 @@ void Window::keyReleaseEvent(QKeyEvent *event) {
         down_pressed = false;
     }
     
-    QWidget::keyReleaseEvent(event);
+    QMainWindow::keyReleaseEvent(event);
 }
 
 void Window::updateProgressBars() {
@@ -85,18 +77,62 @@ void Window::updateProgressBars() {
 }
 
 void Window::setProgressBars() {
-    x_progress_bar = new QProgressBar(this);
+    x_progress_bar = new QProgressBar();
     x_progress_bar->setFormat("%v");
     x_progress_bar->setRange(-100, 100);
     x_progress_bar->setValue(0);
-    x_progress_bar->setGeometry(50, 470, 200, 30);
 
-    y_progress_bar = new QProgressBar(this);
+    y_progress_bar = new QProgressBar();
     y_progress_bar->setFormat("%v");
     y_progress_bar->setRange(-100, 100);
     y_progress_bar->setValue(0);
-    y_progress_bar->setGeometry(10, 400, 30, 100);
     y_progress_bar->setOrientation(Qt::Vertical);
+}
+
+void Window::setMainTab() {
+    mainTab = new QWidget();
+
+    setCameraWidget();
+    setControlsWidget();
+    setProgressBars();
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(mainTab);
+    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+
+    horizontalLayout->addWidget(y_progress_bar);
+
+    QVBoxLayout *rightLayout = new QVBoxLayout();
+
+    rightLayout->addWidget(m_videoWidget, 1);
+    rightLayout->addWidget(m_button);
+    rightLayout->addWidget(x_progress_bar);
+
+    horizontalLayout->addLayout(rightLayout, 1);
+
+    mainLayout->addLayout(horizontalLayout);
+
+    tabWidget->addTab(mainTab, "Main");
+}
+
+void Window::setCameraWidget() {
+    m_videoWidget = new QVideoWidget();
+
+    QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
+    if (!cameras.isEmpty()) {
+        m_camera = new QCamera(cameras.first());
+    } else {
+        qDebug() << "Camera not found!";
+        m_camera = new QCamera();
+    }
+    
+    m_captureSession = new QMediaCaptureSession();
+    m_captureSession->setCamera(m_camera);
+    m_captureSession->setVideoOutput(m_videoWidget);
+}
+
+void Window::setControlsWidget() {
+    m_button = new QPushButton("Start capturing", this);
+    m_button->setCheckable(true);
 }
 
 void Window::slotButtonClicked(bool checked) {

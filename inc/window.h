@@ -2,13 +2,16 @@
 #define WINDOW_H
 
 #include <QWidget>
+#include <QMainWindow>
 #include <QCamera>
+#include <QCameraDevice>
+#include <QMediaDevices>
 #include <QMediaCaptureSession>
 #include <QVideoWidget>
 #include <QProgressBar>
 
 class QPushButton;
-class Window : public QWidget
+class Window : public QMainWindow
 {
     Q_OBJECT
     public:
@@ -26,8 +29,9 @@ class Window : public QWidget
         QVideoWidget *m_videoWidget;
         QPushButton *m_button;
         QProgressBar *x_progress_bar, *y_progress_bar;
+        QTabWidget *tabWidget;
+        QWidget *mainTab, *logTab;
         int m_counter;
-
         bool left_pressed  = false, 
              right_pressed = false, 
              up_pressed    = false, 
@@ -36,6 +40,10 @@ class Window : public QWidget
     protected:
         void setProgressBars();
         void updateProgressBars();
+        void setMainTab();
+        void setLogTab();
+        void setCameraWidget();
+        void setControlsWidget();
         void keyPressEvent(QKeyEvent *event);
         void keyReleaseEvent(QKeyEvent *event);
 };
