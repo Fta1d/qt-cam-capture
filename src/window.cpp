@@ -163,23 +163,23 @@ void Window::updateProgressBars() {
     bool valueChanged = false;
     
     // Handle X-axis movement
-    if (m_keyStates.left && m_xProgressBar->value() > m_xProgressBar->minimum()) {
+    if (m_keyStates.left && !m_keyStates.right && m_xProgressBar->value() > m_xProgressBar->minimum()) {
         m_xPosition = m_xProgressBar->value() - 10;
         m_xProgressBar->setValue(m_xPosition);
         valueChanged = true;
-    } else if (m_keyStates.right && m_xProgressBar->value() < m_xProgressBar->maximum()) {
+    } else if (m_keyStates.right && !m_keyStates.left && m_xProgressBar->value() < m_xProgressBar->maximum()) {
         m_xPosition = m_xProgressBar->value() + 10;
         m_xProgressBar->setValue(m_xPosition);
         valueChanged = true;
     }
     
-    // Handle Y-axis movement
-    if (m_keyStates.up && m_yProgressBar->value() < m_yProgressBar->maximum()) {
-        m_yPosition = m_yProgressBar->value() + 10;
+    // Handle Y-axis movement - only process if one direction is pressed, not both
+    if (m_keyStates.down && !m_keyStates.up && m_yProgressBar->value() > m_yProgressBar->minimum()) {
+        m_yPosition = m_yProgressBar->value() - 10;
         m_yProgressBar->setValue(m_yPosition);
         valueChanged = true;
-    } else if (m_keyStates.down && m_yProgressBar->value() > m_yProgressBar->minimum()) {
-        m_yPosition = m_yProgressBar->value() - 10;
+    } else if (m_keyStates.up && !m_keyStates.down && m_yProgressBar->value() < m_yProgressBar->maximum()) {
+        m_yPosition = m_yProgressBar->value() + 10;
         m_yProgressBar->setValue(m_yPosition);
         valueChanged = true;
     }
