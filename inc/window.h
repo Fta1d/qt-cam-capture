@@ -1,7 +1,6 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
-#include <QWidget>
 #include <QMainWindow>
 #include <QCamera>
 #include <QCameraDevice>
@@ -10,48 +9,66 @@
 #include <QVideoWidget>
 #include <QProgressBar>
 #include <QPlainTextEdit>
+#include <QTabWidget>
 
 class QPushButton;
+class QKeyEvent;
+
 class Window : public QMainWindow
 {
     Q_OBJECT
-    public:
-        explicit Window(QWidget *parent = 0);
 
-    signals:
-        void maxPressesReached();
+public:
+    explicit Window(QWidget *parent = nullptr);
 
-    private slots:
-        void slotButtonClicked(bool checked);
+signals:
+    void maxPressesReached();
 
-    private:
-        QPushButton *m_button;
-        QProgressBar *x_progress_bar, *y_progress_bar;
-        QPlainTextEdit *m_text_edit;
+private slots:
+    void slotButtonClicked(bool checked);
+    void updateProgressBars();
 
-        QCamera *m_camera;
-        QMediaCaptureSession *m_captureSession;
-        QVideoWidget *m_videoWidget;
-        
-        QTabWidget *m_tab_widget;
-        QWidget *m_main_tab, *m_log_tab;
-        int m_counter;
-        short x_val = 0, y_val = 0;
-        bool left_pressed  = false, 
-             right_pressed = false, 
-             up_pressed    = false, 
-             down_pressed  = false;
+protected:
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 
-    protected:
-        void setProgressBars();
-        void setMainTab();
-        void setLogTab();
-        void setCameraWidget();
-        void setControlsWidget();
-        void setTextWidget();
-        void keyPressEvent(QKeyEvent *event);
-        void keyReleaseEvent(QKeyEvent *event);
-        void updateProgressBars();
+private:
+    // UI setup methods
+    void setupUI();
+    void setupMainTab();
+    void setupLogTab();
+    void setupCameraWidget();
+    void setupControlsWidget();
+    void setupTextWidget();
+    void setupProgressBars();
+    void setupConnections();
+
+    // UI components
+    QTabWidget* m_tabWidget;
+    QWidget* m_mainTab;
+    QWidget* m_logTab;
+    
+    QPushButton* m_captureButton;
+    QProgressBar* m_xProgressBar;
+    QProgressBar* m_yProgressBar;
+    QPlainTextEdit* m_logTextEdit;
+    
+    // Camera components
+    QCamera* m_camera;
+    QMediaCaptureSession* m_captureSession;
+    QVideoWidget* m_videoWidget;
+
+    // State variables
+    int m_buttonPressCounter;
+    int m_xPosition;
+    int m_yPosition;
+    
+    struct {
+        bool left;
+        bool right;
+        bool up;
+        bool down;
+    } m_keyStates;
 };
 
 #endif // WINDOW_H

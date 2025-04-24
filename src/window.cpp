@@ -1,178 +1,97 @@
 #include "inc/window.h"
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QApplication>
 #include <QKeyEvent>
 #include <QTimer>
+#include <QDebug>
 
-Window::Window(QWidget *parent) :
-QMainWindow(parent) {
+Window::Window(QWidget *parent) : 
+QMainWindow(parent),
+    m_buttonPressCounter(0),
+    m_xPosition(0),
+    m_yPosition(0) {
+    m_keyStates = {false, false, false, false};
+    
     setFocusPolicy(Qt::StrongFocus);
     resize(640, 445);
-    m_counter = 0;
-
-    m_tab_widget = new QTabWidget(this);
-
-    setMainTab();
-    setLogTab();
-    setCentralWidget(m_tab_widget);
-
-    connect(m_button, SIGNAL(clicked(bool)), this, SLOT(slotButtonClicked(bool)));
-    connect(this, SIGNAL(maxPressesReached()), QApplication::instance(), SLOT(quit()));
-
+    
+    setupUI();
+    setupConnections();
+    
+    // Start the timer for progress bar updates
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &Window::updateProgressBars);
     timer->start(50);
-
+    
     setFocus();
 }
 
-/*----------------TABS INITIATION-------------*/
+void Window::setupUI() {
+    m_tabWidget = new QTabWidget(this);
+    
+    setupMainTab();
+    setupLogTab();
+    
+    setCentralWidget(m_tabWidget);
+}
 
-void Window::setMainTab() {
-    m_main_tab = new QWidget();
-
-    setCameraWidget();
-    setControlsWidget();
-    setProgressBars();
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(m_main_tab);
+void Window::setupMainTab() {
+    m_mainTab = new QWidget();
+    
+    setupCameraWidget();
+    setupControlsWidget();
+    setupProgressBars();
+    
+    // Create layouts
+    QVBoxLayout *mainLayout = new QVBoxLayout(m_mainTab);
     QHBoxLayout *horizontalLayout = new QHBoxLayout();
-
-    horizontalLayout->addWidget(y_progress_bar);
-
     QVBoxLayout *rightLayout = new QVBoxLayout();
-
+    
+    // Add widgets to layouts
+    horizontalLayout->addWidget(m_yProgressBar);
+    
     rightLayout->addWidget(m_videoWidget, 1);
-    rightLayout->addWidget(m_button);
-    rightLayout->addWidget(x_progress_bar);
-
+    rightLayout->addWidget(m_captureButton);
+    rightLayout->addWidget(m_xProgressBar);
+    
     horizontalLayout->addLayout(rightLayout, 1);
-
     mainLayout->addLayout(horizontalLayout);
-
-    m_tab_widget->addTab(m_main_tab, "Main");
-}
-
-
-void Window::setLogTab() {
-    m_log_tab = new QWidget();
-
-    setTextWidget();
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(m_log_tab);
-
-    mainLayout->addWidget(m_text_edit);
     
-    m_tab_widget->addTab(m_log_tab, "Log");
-}
-/*--------------------------------------------*/
-
-/*----------------EVENTS----------------------*/
-
-void Window::keyPressEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Left) {
-        left_pressed = true;
-    } else if (event->key() == Qt::Key_Right) {
-        right_pressed = true;
-    } else if (event->key() == Qt::Key_Up) {
-        up_pressed = true;
-    } else if (event->key() == Qt::Key_Down) {
-        down_pressed = true;
-    }
-
-    QMainWindow::keyPressEvent(event);
+    m_tabWidget->addTab(m_mainTab, "Main");
 }
 
-void Window::keyReleaseEvent(QKeyEvent *event) {
-    if (event->key() == Qt::Key_Left) {
-        left_pressed = false;
-    } else if (event->key() == Qt::Key_Right) {
-        right_pressed = false;
-    } else if (event->key() == Qt::Key_Up) {
-        up_pressed = false;
-    } else if (event->key() == Qt::Key_Down) {
-        down_pressed = false;
-    }
+void Window::setupLogTab() {
+    m_logTab = new QWidget();
     
-    QMainWindow::keyReleaseEvent(event);
-}
-/*--------------------------------------------*/
-
-/*----------------UPDATE BARS-----------------*/
-
-void Window::updateProgressBars() {
-    if (left_pressed) {
-        x_val = x_progress_bar->value();
-
-        if (!(x_val == x_progress_bar->minimum())) {
-            x_val -= 10;
-            x_progress_bar->setValue(x_val);
-        } else {
-            return;
-        }
-
-        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
-    }
+    setupTextWidget();
     
-    if (right_pressed) {
-        x_val = x_progress_bar->value();
-
-        if (!(x_val == x_progress_bar->maximum())) {
-            x_val += 10;
-            x_progress_bar->setValue(x_val);
-        } else {
-            return;
-        }
-
-        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
-    }
-
-    if (up_pressed) {
-        y_val = y_progress_bar->value();
-
-        if (!(y_val == y_progress_bar->maximum())) {
-            y_val += 10;
-            y_progress_bar->setValue(y_val);
-        } else {
-            return;
-        }
-        
-        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
-    }
+    QVBoxLayout *mainLayout = new QVBoxLayout(m_logTab);
+    mainLayout->addWidget(m_logTextEdit);
     
-    if (down_pressed) {
-        y_val = y_progress_bar->value();
-
-        if (!(y_val == y_progress_bar->minimum())) {
-            y_val -= 10;
-            y_progress_bar->setValue(y_val);
-        } else {
-            return;
-        }
-
-        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
-    }
-}
-/*--------------------------------------------*/
-
-/*----------------WIDGETS INITIATION----------*/
-void Window::setProgressBars() {
-    x_progress_bar = new QProgressBar();
-    x_progress_bar->setFormat("%v");
-    x_progress_bar->setRange(-100, 100);
-    x_progress_bar->setValue(0);
-
-    y_progress_bar = new QProgressBar();
-    y_progress_bar->setFormat("%v");
-    y_progress_bar->setRange(-100, 100);
-    y_progress_bar->setValue(0);
-    y_progress_bar->setOrientation(Qt::Vertical);
+    m_tabWidget->addTab(m_logTab, "Log");
 }
 
-void Window::setCameraWidget() {
+void Window::setupProgressBars() {
+    // Setup X progress bar
+    m_xProgressBar = new QProgressBar();
+    m_xProgressBar->setFormat("%v");
+    m_xProgressBar->setRange(-100, 100);
+    m_xProgressBar->setValue(0);
+    
+    // Setup Y progress bar
+    m_yProgressBar = new QProgressBar();
+    m_yProgressBar->setFormat("%v");
+    m_yProgressBar->setRange(-100, 100);
+    m_yProgressBar->setValue(0);
+    m_yProgressBar->setOrientation(Qt::Vertical);
+}
+
+void Window::setupCameraWidget() {
     m_videoWidget = new QVideoWidget();
-
+    
+    // Find available cameras
     QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
     if (!cameras.isEmpty()) {
         m_camera = new QCamera(cameras.first());
@@ -181,35 +100,108 @@ void Window::setCameraWidget() {
         m_camera = new QCamera();
     }
     
+    // Set up capture session
     m_captureSession = new QMediaCaptureSession();
     m_captureSession->setCamera(m_camera);
     m_captureSession->setVideoOutput(m_videoWidget);
 }
 
-void Window::setControlsWidget() {
-    m_button = new QPushButton("Start capturing", this);
-    m_button->setCheckable(true);
+void Window::setupControlsWidget() {
+    m_captureButton = new QPushButton("Start capturing", this);
+    m_captureButton->setCheckable(true);
 }
 
-void Window::setTextWidget() {
-    m_text_edit = new QPlainTextEdit();
+void Window::setupTextWidget() {
+    m_logTextEdit = new QPlainTextEdit();
+    m_logTextEdit->setReadOnly(true);
 }
 
-/*--------------------------------------------*/
+void Window::setupConnections() {
+    connect(m_captureButton, &QPushButton::clicked, this, &Window::slotButtonClicked);
+    connect(this, &Window::maxPressesReached, QApplication::instance(), &QApplication::quit);
+}
 
-/*----------------CUSTOM SLOTS----------------*/
+void Window::keyPressEvent(QKeyEvent *event) {
+    switch (event->key()) {
+    case Qt::Key_Left:
+        m_keyStates.left = true;
+        break;
+    case Qt::Key_Right:
+        m_keyStates.right = true;
+        break;
+    case Qt::Key_Up:
+        m_keyStates.up = true;
+        break;
+    case Qt::Key_Down:
+        m_keyStates.down = true;
+        break;
+    default:
+        QMainWindow::keyPressEvent(event);
+    }
+}
+
+void Window::keyReleaseEvent(QKeyEvent *event) {
+    switch (event->key()) {
+    case Qt::Key_Left:
+        m_keyStates.left = false;
+        break;
+    case Qt::Key_Right:
+        m_keyStates.right = false;
+        break;
+    case Qt::Key_Up:
+        m_keyStates.up = false;
+        break;
+    case Qt::Key_Down:
+        m_keyStates.down = false;
+        break;
+    default:
+        QMainWindow::keyReleaseEvent(event);
+    }
+}
+
+void Window::updateProgressBars() {
+    bool valueChanged = false;
+    
+    // Handle X-axis movement
+    if (m_keyStates.left && m_xProgressBar->value() > m_xProgressBar->minimum()) {
+        m_xPosition = m_xProgressBar->value() - 10;
+        m_xProgressBar->setValue(m_xPosition);
+        valueChanged = true;
+    } else if (m_keyStates.right && m_xProgressBar->value() < m_xProgressBar->maximum()) {
+        m_xPosition = m_xProgressBar->value() + 10;
+        m_xProgressBar->setValue(m_xPosition);
+        valueChanged = true;
+    }
+    
+    // Handle Y-axis movement
+    if (m_keyStates.up && m_yProgressBar->value() < m_yProgressBar->maximum()) {
+        m_yPosition = m_yProgressBar->value() + 10;
+        m_yProgressBar->setValue(m_yPosition);
+        valueChanged = true;
+    } else if (m_keyStates.down && m_yProgressBar->value() > m_yProgressBar->minimum()) {
+        m_yPosition = m_yProgressBar->value() - 10;
+        m_yProgressBar->setValue(m_yPosition);
+        valueChanged = true;
+    }
+    
+    // Log position changes
+    if (valueChanged) {
+        m_logTextEdit->appendPlainText(
+            QString("Position: x = %1, y = %2").arg(m_xPosition).arg(m_yPosition)
+        );
+    }
+}
 
 void Window::slotButtonClicked(bool checked) {
     if (checked) {
-        m_button->setText("Stop capturing");
+        m_captureButton->setText("Stop capturing");
         m_camera->start();
     } else {
-        m_button->setText("Start capturing");
+        m_captureButton->setText("Start capturing");
         m_camera->stop();
     }
-
-    if (++m_counter == 5) {
+    
+    if (++m_buttonPressCounter == 5) {
         emit maxPressesReached();
     }
 }
-/*--------------------------------------------*/
