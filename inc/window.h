@@ -28,10 +28,10 @@ class Window : public QWidget
         QProgressBar *x_progress_bar, *y_progress_bar;
         int m_counter;
 
-        bool left_pressed, 
-             right_pressed, 
-             up_pressed, 
-             down_pressed;
+        bool left_pressed  = false, 
+             right_pressed = false, 
+             up_pressed    = false, 
+             down_pressed  = false;
 
     protected:
         void setProgressBars();
