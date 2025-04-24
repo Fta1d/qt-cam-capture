@@ -9,6 +9,7 @@
 #include <QMediaCaptureSession>
 #include <QVideoWidget>
 #include <QProgressBar>
+#include <QPlainTextEdit>
 
 class QPushButton;
 class Window : public QMainWindow
@@ -24,14 +25,18 @@ class Window : public QMainWindow
         void slotButtonClicked(bool checked);
 
     private:
+        QPushButton *m_button;
+        QProgressBar *x_progress_bar, *y_progress_bar;
+        QPlainTextEdit *m_text_edit;
+
         QCamera *m_camera;
         QMediaCaptureSession *m_captureSession;
         QVideoWidget *m_videoWidget;
-        QPushButton *m_button;
-        QProgressBar *x_progress_bar, *y_progress_bar;
-        QTabWidget *tabWidget;
-        QWidget *mainTab, *logTab;
+        
+        QTabWidget *m_tab_widget;
+        QWidget *m_main_tab, *m_log_tab;
         int m_counter;
+        short x_val = 0, y_val = 0;
         bool left_pressed  = false, 
              right_pressed = false, 
              up_pressed    = false, 
@@ -39,13 +44,14 @@ class Window : public QMainWindow
 
     protected:
         void setProgressBars();
-        void updateProgressBars();
         void setMainTab();
         void setLogTab();
         void setCameraWidget();
         void setControlsWidget();
+        void setTextWidget();
         void keyPressEvent(QKeyEvent *event);
         void keyReleaseEvent(QKeyEvent *event);
+        void updateProgressBars();
 };
 
 #endif // WINDOW_H

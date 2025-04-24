@@ -11,10 +11,11 @@ QMainWindow(parent) {
     resize(640, 445);
     m_counter = 0;
 
-    tabWidget = new QTabWidget(this);
+    m_tab_widget = new QTabWidget(this);
 
     setMainTab();
-    setCentralWidget(tabWidget);
+    setLogTab();
+    setCentralWidget(m_tab_widget);
 
     connect(m_button, SIGNAL(clicked(bool)), this, SLOT(slotButtonClicked(bool)));
     connect(this, SIGNAL(maxPressesReached()), QApplication::instance(), SLOT(quit()));
@@ -25,6 +26,49 @@ QMainWindow(parent) {
 
     setFocus();
 }
+
+/*----------------TABS INITIATION-------------*/
+
+void Window::setMainTab() {
+    m_main_tab = new QWidget();
+
+    setCameraWidget();
+    setControlsWidget();
+    setProgressBars();
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(m_main_tab);
+    QHBoxLayout *horizontalLayout = new QHBoxLayout();
+
+    horizontalLayout->addWidget(y_progress_bar);
+
+    QVBoxLayout *rightLayout = new QVBoxLayout();
+
+    rightLayout->addWidget(m_videoWidget, 1);
+    rightLayout->addWidget(m_button);
+    rightLayout->addWidget(x_progress_bar);
+
+    horizontalLayout->addLayout(rightLayout, 1);
+
+    mainLayout->addLayout(horizontalLayout);
+
+    m_tab_widget->addTab(m_main_tab, "Main");
+}
+
+
+void Window::setLogTab() {
+    m_log_tab = new QWidget();
+
+    setTextWidget();
+
+    QVBoxLayout *mainLayout = new QVBoxLayout(m_log_tab);
+
+    mainLayout->addWidget(m_text_edit);
+    
+    m_tab_widget->addTab(m_log_tab, "Log");
+}
+/*--------------------------------------------*/
+
+/*----------------EVENTS----------------------*/
 
 void Window::keyPressEvent(QKeyEvent *event) {
     if (event->key() == Qt::Key_Left) {
@@ -53,29 +97,66 @@ void Window::keyReleaseEvent(QKeyEvent *event) {
     
     QMainWindow::keyReleaseEvent(event);
 }
+/*--------------------------------------------*/
+
+/*----------------UPDATE BARS-----------------*/
 
 void Window::updateProgressBars() {
     if (left_pressed) {
-        int x_val = x_progress_bar->value();
-        x_progress_bar->setValue(x_val - 10);
+        x_val = x_progress_bar->value();
+
+        if (!(x_val == x_progress_bar->minimum())) {
+            x_val -= 10;
+            x_progress_bar->setValue(x_val);
+        } else {
+            return;
+        }
+
+        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
     }
     
     if (right_pressed) {
-        int x_val = x_progress_bar->value();
-        x_progress_bar->setValue(x_val + 10);
+        x_val = x_progress_bar->value();
+
+        if (!(x_val == x_progress_bar->maximum())) {
+            x_val += 10;
+            x_progress_bar->setValue(x_val);
+        } else {
+            return;
+        }
+
+        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
     }
 
     if (up_pressed) {
-        int y_val = y_progress_bar->value();
-        y_progress_bar->setValue(y_val + 10);
+        y_val = y_progress_bar->value();
+
+        if (!(y_val == y_progress_bar->maximum())) {
+            y_val += 10;
+            y_progress_bar->setValue(y_val);
+        } else {
+            return;
+        }
+        
+        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
     }
     
     if (down_pressed) {
-        int y_val = y_progress_bar->value();
-        y_progress_bar->setValue(y_val - 10);
+        y_val = y_progress_bar->value();
+
+        if (!(y_val == y_progress_bar->minimum())) {
+            y_val -= 10;
+            y_progress_bar->setValue(y_val);
+        } else {
+            return;
+        }
+
+        m_text_edit->appendPlainText(QString("Position: x = %1, y = %2").arg(x_val).arg(y_val));
     }
 }
+/*--------------------------------------------*/
 
+/*----------------WIDGETS INITIATION----------*/
 void Window::setProgressBars() {
     x_progress_bar = new QProgressBar();
     x_progress_bar->setFormat("%v");
@@ -87,31 +168,6 @@ void Window::setProgressBars() {
     y_progress_bar->setRange(-100, 100);
     y_progress_bar->setValue(0);
     y_progress_bar->setOrientation(Qt::Vertical);
-}
-
-void Window::setMainTab() {
-    mainTab = new QWidget();
-
-    setCameraWidget();
-    setControlsWidget();
-    setProgressBars();
-
-    QVBoxLayout *mainLayout = new QVBoxLayout(mainTab);
-    QHBoxLayout *horizontalLayout = new QHBoxLayout();
-
-    horizontalLayout->addWidget(y_progress_bar);
-
-    QVBoxLayout *rightLayout = new QVBoxLayout();
-
-    rightLayout->addWidget(m_videoWidget, 1);
-    rightLayout->addWidget(m_button);
-    rightLayout->addWidget(x_progress_bar);
-
-    horizontalLayout->addLayout(rightLayout, 1);
-
-    mainLayout->addLayout(horizontalLayout);
-
-    tabWidget->addTab(mainTab, "Main");
 }
 
 void Window::setCameraWidget() {
@@ -135,6 +191,14 @@ void Window::setControlsWidget() {
     m_button->setCheckable(true);
 }
 
+void Window::setTextWidget() {
+    m_text_edit = new QPlainTextEdit();
+}
+
+/*--------------------------------------------*/
+
+/*----------------CUSTOM SLOTS----------------*/
+
 void Window::slotButtonClicked(bool checked) {
     if (checked) {
         m_button->setText("Stop capturing");
@@ -148,3 +212,4 @@ void Window::slotButtonClicked(bool checked) {
         emit maxPressesReached();
     }
 }
+/*--------------------------------------------*/
