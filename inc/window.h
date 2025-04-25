@@ -12,6 +12,7 @@
 #include <QTabWidget>
 #include <QBoxLayout>
 #include <QGroupBox>
+#include <QMutex>
 
 class QPushButton;
 class QKeyEvent;
@@ -79,6 +80,9 @@ private:
         bool up;
         bool down;
     } m_keyStates;
+
+    // Synchronization primitives
+    mutable QMutex m_logMutex;
 };
 
 #endif // WINDOW_H

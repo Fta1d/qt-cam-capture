@@ -128,6 +128,7 @@ void Window::setupCameraWidget() {
     if (!cameras.isEmpty()) {
         m_camera = new QCamera(cameras.first());
     } else {
+        QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Camera not found!");
         m_camera = new QCamera();
     }
@@ -257,6 +258,7 @@ void Window::updateProgressBars() {
     
     // Log position changes
     if (valueChanged) {
+        QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText(
             QString("Position: x = %1, y = %2").arg(m_xPosition).arg(m_yPosition)
         );
@@ -267,10 +269,14 @@ void Window::slotButtonClicked(bool checked) {
     if (checked) {
         m_captureButton->setText("Stop capturing");
         m_camera->start();
+        
+        QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Started capturing...");
     } else {
         m_captureButton->setText("Start capturing");
         m_camera->stop();
+
+        QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Stoped capturing.");
     }
     
@@ -281,6 +287,8 @@ void Window::slotButtonClicked(bool checked) {
 
 void Window::setSpeed(int val) {
     this->m_speed = val;
+
+    QMutexLocker locker(&m_logMutex);
     m_logTextEdit->appendPlainText(
         QString("Turret speed set to: %1").arg(val)
     );
