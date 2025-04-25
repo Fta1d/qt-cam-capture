@@ -1,22 +1,26 @@
 #include "inc/window.h"
+
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QGroupBox>
+#include <QComboBox>
+#include <QFormLayout>
 #include <QApplication>
 #include <QKeyEvent>
 #include <QTimer>
 #include <QDebug>
+#include <QLabel>
 
 Window::Window(QWidget *parent) : 
 QMainWindow(parent),
     m_buttonPressCounter(0),
     m_xPosition(0),
-    m_yPosition(0) {
+    m_yPosition(0),
+    m_speed(5) {
     m_keyStates = {false, false, false, false};
     
     setFocusPolicy(Qt::StrongFocus);
-    resize(640, 445);
+    resize(900, 600);
     
     setupUI();
     setupConnections();
@@ -149,9 +153,33 @@ void Window::setupSettingsBoxes(QBoxLayout *mainLayout) {
     QGroupBox *loggerSettingsBox = new QGroupBox(tr("Logger Settings"));
     QGroupBox *appSettingsBox = new QGroupBox(tr("App Settings"));
 
+    setupTurretSettingsBox(turrertSettingsBox);
+
     mainLayout->addWidget(turrertSettingsBox);
     mainLayout->addWidget(loggerSettingsBox);
     mainLayout->addWidget(appSettingsBox);
+}
+
+void Window::setupTurretSettingsBox(QGroupBox *settingsBox) {
+    QFormLayout *formLayout = new QFormLayout();
+    QComboBox *speedSelect = new QComboBox();
+
+    for (int i = 5; i < 50; i += 5) {
+        QVariant variant(i);
+        speedSelect->addItem(QString("%1").arg(i), variant);
+    }
+
+    connect(speedSelect, &QComboBox::currentIndexChanged, this, [this, speedSelect]() {
+        QVariant data= speedSelect->currentData();
+        setSpeed(data.toInt());
+    });
+
+    formLayout->addRow("Turret speed:", speedSelect);
+
+    QVBoxLayout *turretSettingsLayout = new QVBoxLayout();
+    turretSettingsLayout->addLayout(formLayout);
+
+    settingsBox->setLayout(turretSettingsLayout);
 }
 
 void Window::setupConnections() {
@@ -200,25 +228,29 @@ void Window::keyReleaseEvent(QKeyEvent *event) {
 
 void Window::updateProgressBars() {
     bool valueChanged = false;
-    
+    int x_max = m_xProgressBar->maximum();
+    int x_min = m_xProgressBar->minimum();
+    int y_max = m_yProgressBar->maximum();
+    int y_min = m_yProgressBar->minimum();
+
     // Handle X-axis movement
-    if (m_keyStates.left && !m_keyStates.right && m_xProgressBar->value() > m_xProgressBar->minimum()) {
-        m_xPosition = m_xProgressBar->value() - 10;
+    if (m_keyStates.left && !m_keyStates.right && m_xProgressBar->value() > x_min) {
+        m_xPosition = m_xProgressBar->value() - m_speed < x_min ? x_min : m_xProgressBar->value() - m_speed;
         m_xProgressBar->setValue(m_xPosition);
         valueChanged = true;
-    } else if (m_keyStates.right && !m_keyStates.left && m_xProgressBar->value() < m_xProgressBar->maximum()) {
-        m_xPosition = m_xProgressBar->value() + 10;
+    } else if (m_keyStates.right && !m_keyStates.left && m_xProgressBar->value() < x_max) {
+        m_xPosition = m_xProgressBar->value() + m_speed > x_max ? x_max : m_xProgressBar->value() + m_speed;
         m_xProgressBar->setValue(m_xPosition);
         valueChanged = true;
     }
     
     // Handle Y-axis movement - only process if one direction is pressed, not both
-    if (m_keyStates.down && !m_keyStates.up && m_yProgressBar->value() > m_yProgressBar->minimum()) {
-        m_yPosition = m_yProgressBar->value() - 10;
+    if (m_keyStates.down && !m_keyStates.up && m_yProgressBar->value() > y_min) {
+        m_yPosition = m_yProgressBar->value() - m_speed < y_min ? y_min : m_yProgressBar->value() - m_speed;
         m_yProgressBar->setValue(m_yPosition);
         valueChanged = true;
-    } else if (m_keyStates.up && !m_keyStates.down && m_yProgressBar->value() < m_yProgressBar->maximum()) {
-        m_yPosition = m_yProgressBar->value() + 10;
+    } else if (m_keyStates.up && !m_keyStates.down && m_yProgressBar->value() < y_max) {
+        m_yPosition = m_yProgressBar->value() + m_speed > y_max ? y_max : m_yProgressBar->value() + m_speed;
         m_yProgressBar->setValue(m_yPosition);
         valueChanged = true;
     }
@@ -235,12 +267,21 @@ void Window::slotButtonClicked(bool checked) {
     if (checked) {
         m_captureButton->setText("Stop capturing");
         m_camera->start();
+        m_logTextEdit->appendPlainText("Started capturing...");
     } else {
         m_captureButton->setText("Start capturing");
         m_camera->stop();
+        m_logTextEdit->appendPlainText("Stoped capturing.");
     }
     
-    if (++m_buttonPressCounter == 5) {
+    if (++m_buttonPressCounter == 10) {
         emit maxPressesReached();
     }
+}
+
+void Window::setSpeed(int val) {
+    this->m_speed = val;
+    m_logTextEdit->appendPlainText(
+        QString("Turret speed set to: %1").arg(val)
+    );
 }

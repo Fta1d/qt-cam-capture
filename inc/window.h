@@ -11,6 +11,7 @@
 #include <QPlainTextEdit>
 #include <QTabWidget>
 #include <QBoxLayout>
+#include <QGroupBox>
 
 class QPushButton;
 class QKeyEvent;
@@ -44,7 +45,11 @@ private:
     void setupTextWidget();
     void setupProgressBars();
     void setupSettingsBoxes(QBoxLayout *mainLayout);
+    void setupTurretSettingsBox(QGroupBox *settingsBox);
     void setupConnections();
+
+    // Setters
+    void setSpeed(int val);
 
     // UI components
     QTabWidget* m_tabWidget;
@@ -66,6 +71,7 @@ private:
     int m_buttonPressCounter;
     int m_xPosition;
     int m_yPosition;
+    int m_speed;
     
     struct {
         bool left;
