@@ -10,6 +10,7 @@
 #include <QProgressBar>
 #include <QPlainTextEdit>
 #include <QTabWidget>
+#include <QBoxLayout>
 
 class QPushButton;
 class QKeyEvent;
@@ -37,16 +38,19 @@ private:
     void setupUI();
     void setupMainTab();
     void setupLogTab();
+    void setupSettingsTab();
     void setupCameraWidget();
     void setupControlsWidget();
     void setupTextWidget();
     void setupProgressBars();
+    void setupSettingsBoxes(QBoxLayout *mainLayout);
     void setupConnections();
 
     // UI components
     QTabWidget* m_tabWidget;
     QWidget* m_mainTab;
     QWidget* m_logTab;
+    QWidget* m_settingsTab;
     
     QPushButton* m_captureButton;
     QProgressBar* m_xProgressBar;

@@ -2,6 +2,7 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QGroupBox>
 #include <QApplication>
 #include <QKeyEvent>
 #include <QTimer>
@@ -33,6 +34,7 @@ void Window::setupUI() {
     
     setupMainTab();
     setupLogTab();
+    setupSettingsTab();
     
     setCentralWidget(m_tabWidget);
 }
@@ -52,7 +54,7 @@ void Window::setupMainTab() {
     // Add widgets to layouts
     horizontalLayout->addWidget(m_yProgressBar);
     
-    rightLayout->addWidget(m_videoWidget, 1);
+    rightLayout->addWidget(m_videoWidget);
     rightLayout->addWidget(m_captureButton);
     rightLayout->addWidget(m_xProgressBar);
     
@@ -66,11 +68,37 @@ void Window::setupLogTab() {
     m_logTab = new QWidget();
     
     setupTextWidget();
+
+    QPushButton *clearLogButton = new QPushButton("Clear", this);
+    QPushButton *copyLogButton = new QPushButton("Copy", this);
     
+    connect(clearLogButton, &QPushButton::clicked,  m_logTextEdit, &QPlainTextEdit::clear);
+    connect(copyLogButton, &QPushButton::clicked, m_logTextEdit, [this]() {
+        m_logTextEdit->selectAll();
+        m_logTextEdit->copy();
+        m_logTextEdit->moveCursor(QTextCursor::End); 
+    });
+    
+    QHBoxLayout *buttonsLayout = new QHBoxLayout();
+    buttonsLayout->addWidget(clearLogButton);
+    buttonsLayout->addWidget(copyLogButton);
+
     QVBoxLayout *mainLayout = new QVBoxLayout(m_logTab);
+    
+    mainLayout->addLayout(buttonsLayout);
     mainLayout->addWidget(m_logTextEdit);
     
     m_tabWidget->addTab(m_logTab, "Log");
+}
+
+void Window::setupSettingsTab() {
+    m_settingsTab = new QWidget();
+
+    QBoxLayout *mainLayout = new QBoxLayout(QBoxLayout::LeftToRight, m_settingsTab);
+
+    setupSettingsBoxes(mainLayout);
+
+    m_tabWidget->addTab(m_settingsTab, "Settings");
 }
 
 void Window::setupProgressBars() {
@@ -96,7 +124,7 @@ void Window::setupCameraWidget() {
     if (!cameras.isEmpty()) {
         m_camera = new QCamera(cameras.first());
     } else {
-        qDebug() << "Camera not found!";
+        m_logTextEdit->appendPlainText("Camera not found!");
         m_camera = new QCamera();
     }
     
@@ -116,12 +144,23 @@ void Window::setupTextWidget() {
     m_logTextEdit->setReadOnly(true);
 }
 
+void Window::setupSettingsBoxes(QBoxLayout *mainLayout) {
+    QGroupBox *turrertSettingsBox = new QGroupBox(tr("Turret Settings"));
+    QGroupBox *loggerSettingsBox = new QGroupBox(tr("Logger Settings"));
+    QGroupBox *appSettingsBox = new QGroupBox(tr("App Settings"));
+
+    mainLayout->addWidget(turrertSettingsBox);
+    mainLayout->addWidget(loggerSettingsBox);
+    mainLayout->addWidget(appSettingsBox);
+}
+
 void Window::setupConnections() {
     connect(m_captureButton, &QPushButton::clicked, this, &Window::slotButtonClicked);
     connect(this, &Window::maxPressesReached, QApplication::instance(), &QApplication::quit);
 }
 
 void Window::keyPressEvent(QKeyEvent *event) {
+    setFocus();
     switch (event->key()) {
     case Qt::Key_Left:
         m_keyStates.left = true;
