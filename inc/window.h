@@ -13,6 +13,7 @@
 #include <QBoxLayout>
 #include <QGroupBox>
 #include <QMutex>
+#include <QSlider>
 
 class QPushButton;
 class QKeyEvent;
@@ -30,6 +31,8 @@ signals:
 private slots:
     void slotButtonClicked(bool checked);
     void updateProgressBars();
+    void setZoom(int val);
+    void setCameraFocus(int val);
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -45,9 +48,13 @@ private:
     void setupControlsWidget();
     void setupTextWidget();
     void setupProgressBars();
+    void setupZoomAndFocusControl(QSlider *zoomSlider, QSlider *foucsSlider);
     void setupSettingsBoxes(QBoxLayout *mainLayout);
     void setupTurretSettingsBox(QGroupBox *settingsBox);
     void setupConnections();
+
+    // Help methods
+    void getCameraFeatures();
 
     // Setters
     void setSpeed(int val);

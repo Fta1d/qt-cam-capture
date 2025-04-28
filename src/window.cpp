@@ -24,6 +24,8 @@ QMainWindow(parent),
     
     setupUI();
     setupConnections();
+
+    getCameraFeatures();
     
     // Start the timer for progress bar updates
     QTimer *timer = new QTimer(this);
@@ -49,18 +51,33 @@ void Window::setupMainTab() {
     setupCameraWidget();
     setupControlsWidget();
     setupProgressBars();
-    
+
+    QSlider *zoomSlider = new QSlider(m_mainTab);
+    QSlider *foucsSlider = new QSlider(m_mainTab);
+    QLabel *zoomLabel = new QLabel("Zoom");
+    QLabel *focusLabel = new QLabel("Focus");
+    setupZoomAndFocusControl(zoomSlider, foucsSlider);
+
     // Create layouts
     QVBoxLayout *mainLayout = new QVBoxLayout(m_mainTab);
     QHBoxLayout *horizontalLayout = new QHBoxLayout();
+    QHBoxLayout *slidersLayout = new QHBoxLayout();
     QVBoxLayout *rightLayout = new QVBoxLayout();
     
+
     // Add widgets to layouts
     horizontalLayout->addWidget(m_yProgressBar);
+
+    slidersLayout->addWidget(zoomLabel);
+    slidersLayout->addWidget(zoomSlider);
+    slidersLayout->addWidget(focusLabel);
+    slidersLayout->addWidget(foucsSlider);
+    
     
     rightLayout->addWidget(m_videoWidget);
     rightLayout->addWidget(m_captureButton);
     rightLayout->addWidget(m_xProgressBar);
+    rightLayout->addLayout(slidersLayout);
     
     horizontalLayout->addLayout(rightLayout, 1);
     mainLayout->addLayout(horizontalLayout);
@@ -132,11 +149,26 @@ void Window::setupCameraWidget() {
         m_logTextEdit->appendPlainText("Camera not found!");
         m_camera = new QCamera();
     }
+
+    m_camera->setFocusMode(QCamera::FocusModeManual);
     
     // Set up capture session
     m_captureSession = new QMediaCaptureSession();
     m_captureSession->setCamera(m_camera);
     m_captureSession->setVideoOutput(m_videoWidget);
+}
+
+void Window::setupZoomAndFocusControl(QSlider *zoomSlider, QSlider *focusSlider) {
+    zoomSlider->setOrientation(Qt::Horizontal);
+    zoomSlider->setRange(0, 100);
+    zoomSlider->setValue(0);
+
+    focusSlider->setOrientation(Qt::Horizontal);
+    zoomSlider->setRange(0, 100);
+    zoomSlider->setValue(0);
+
+    connect(zoomSlider, SIGNAL(valueChanged(int)), this, SLOT(setZoom(int)));
+    connect(focusSlider, SIGNAL(valueChanged(int)), this, SLOT(setCameraFocus(int)));
 }
 
 void Window::setupControlsWidget() {
@@ -165,13 +197,13 @@ void Window::setupTurretSettingsBox(QGroupBox *settingsBox) {
     QFormLayout *formLayout = new QFormLayout();
     QComboBox *speedSelect = new QComboBox();
 
-    for (int i = 5; i < 50; i += 5) {
+    for (int i = 1; i < 50; i++) {
         QVariant variant(i);
         speedSelect->addItem(QString("%1").arg(i), variant);
     }
 
     connect(speedSelect, &QComboBox::currentIndexChanged, this, [this, speedSelect]() {
-        QVariant data= speedSelect->currentData();
+        QVariant data = speedSelect->currentData();
         setSpeed(data.toInt());
     });
 
@@ -269,7 +301,7 @@ void Window::slotButtonClicked(bool checked) {
     if (checked) {
         m_captureButton->setText("Stop capturing");
         m_camera->start();
-        
+
         QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Started capturing...");
     } else {
@@ -292,4 +324,48 @@ void Window::setSpeed(int val) {
     m_logTextEdit->appendPlainText(
         QString("Turret speed set to: %1").arg(val)
     );
+}
+
+void Window::setZoom(int val) {
+    m_camera->zoomTo(val, 1);
+
+    QMutexLocker locker(&m_logMutex);
+    m_logTextEdit->appendPlainText(
+        QString("Camera zoom set to: %1").arg(val)
+    );
+}
+
+void Window::setCameraFocus(int val) {
+    m_camera->setFocusDistance(val);
+
+    QMutexLocker locker(&m_logMutex);
+    m_logTextEdit->appendPlainText(
+        QString("Camera focus set to: %1").arg(val)
+    );
+}
+
+void Window::getCameraFeatures() {
+    QMutexLocker locker(&m_logMutex);
+    QCamera::Features features = m_camera->supportedFeatures();
+    QString featuresStr;
+
+    if (features & QCamera::Feature::ColorTemperature)
+        featuresStr += "ColorTemperature, ";
+    if (features & QCamera::Feature::ExposureCompensation)
+        featuresStr += "ExposureCompensation, ";
+    if (features & QCamera::Feature::IsoSensitivity)
+        featuresStr += "IsoSensitivity, ";
+    if (features & QCamera::Feature::ManualExposureTime)
+        featuresStr += "ManualExposureTime, ";
+    if (features & QCamera::Feature::CustomFocusPoint)
+        featuresStr += "CustomFocusPoint, ";
+    if (features & QCamera::Feature::FocusDistance)
+        featuresStr += "FocusDistance, ";
+
+    if (!featuresStr.isEmpty())
+        featuresStr.chop(2);
+    else
+        featuresStr = "No supported features";
+
+    m_logTextEdit->appendPlainText(featuresStr);
 }
