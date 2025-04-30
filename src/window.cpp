@@ -145,6 +145,7 @@ void Window::setupCameraWidget() {
     frameDisplayLabel = new QLabel(this);
     frameDisplayLabel->setMinimumSize(640, 480);
     frameDisplayLabel->setScaledContents(true);
+    frameDisplayLabel->setAlignment(Qt::AlignCenter);
 }
 
 void Window::setupZoomAndFocusControl(QSlider *zoomSlider, QSlider *focusSlider) {
@@ -310,6 +311,7 @@ void Window::slotButtonClicked(bool checked) {
 
         frameDisplayLabel->clear();
         frameDisplayLabel->setStyleSheet("background-color: black;");
+        frameDisplayLabel->setText("Waiting for stream...");
 
         QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Stoped capturing.");

@@ -3,7 +3,7 @@
 using namespace cv;
 
 static gboolean bus_callback(GstBus *bus, GstMessage *message, gpointer data);
-static GstFlowReturn new_sample_callback(GstElement *sink, gpointer data);
+GstFlowReturn new_sample_callback(GstElement *sink, gpointer data);
 
 GstreamerCameraCapture::GstreamerCameraCapture() :
     pipeline(nullptr),
@@ -97,7 +97,8 @@ void GstreamerCameraCapture::stop() {
 
 // Message handler from GStreamer bus
 static gboolean bus_callback(GstBus *bus, GstMessage *message, gpointer data) {
-    GMainLoop *loop = (GMainLoop*)data;
+    Q_UNUSED(bus)
+    Q_UNUSED(data)
 
     switch (GST_MESSAGE_TYPE(message)) {
         case GST_MESSAGE_ERROR: {
@@ -107,12 +108,10 @@ static gboolean bus_callback(GstBus *bus, GstMessage *message, gpointer data) {
             std::cerr << "Error: " << err->message << std::endl;
             g_error_free(err);
             g_free(debug);
-            g_main_loop_quit(loop);
             break;
         }
         case GST_MESSAGE_EOS:
             std::cout << "End of stream" << std::endl;
-            g_main_loop_quit(loop);
             break;
         default:
             break;
@@ -294,7 +293,7 @@ QPixmap GstreamerCameraCapture::pull_pixmap_from_frame() {
 }
 
 // Function registered for 
-static GstFlowReturn new_sample_callback(GstElement *sink, gpointer data) {
+GstFlowReturn new_sample_callback(GstElement *sink, gpointer data) {
     GstreamerCameraCapture *instance = static_cast<GstreamerCameraCapture*>(data);
     instance->new_frame(sink);
 

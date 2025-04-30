@@ -35,18 +35,19 @@ class GstreamerCameraCapture {
         GstSample *mat_to_gst_sample(const Mat &frame, GstCaps *caps);
         Mat process_frame(const Mat &input_frame);
         Mat gst_sample_to_mat(GstSample* sample);
-        
+        void new_frame(GstElement *sink);
+
+        friend GstFlowReturn new_sample_callback(GstElement *sink, gpointer data);
 
         QMutex m_mutex;
-        
-    
+
     public:
         
         QPixmap pull_pixmap_from_frame();
         GstreamerCameraCapture();
         ~GstreamerCameraCapture();
 
-        void new_frame(GstElement *sink);
+        
         void stop();
         void run();
 };
