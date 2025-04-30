@@ -9,28 +9,32 @@
 #include <QKeyEvent>
 #include <QTimer>
 #include <QDebug>
-#include <QLabel>
 
 Window::Window(QWidget *parent) : 
-QMainWindow(parent),
+    QMainWindow(parent),
+    frameTimer(nullptr),
     m_buttonPressCounter(0),
     m_xPosition(0),
     m_yPosition(0),
-    m_speed(5) {
+    m_speed(5)
+    {
     m_keyStates = {false, false, false, false};
     
     setFocusPolicy(Qt::StrongFocus);
-    resize(900, 600);
+    resize(800, 600);
     
     setupUI();
     setupConnections();
 
-    getCameraFeatures();
-    
     // Start the timer for progress bar updates
     QTimer *timer = new QTimer(this);
     connect(timer, &QTimer::timeout, this, &Window::updateProgressBars);
     timer->start(50);
+
+    camera = new GstreamerCameraCapture();
+
+    frameTimer = new QTimer(this);
+    connect(frameTimer, &QTimer::timeout, this, &Window::updateFrame);
     
     setFocus();
 }
@@ -74,7 +78,7 @@ void Window::setupMainTab() {
     slidersLayout->addWidget(foucsSlider);
     
     
-    rightLayout->addWidget(m_videoWidget);
+    rightLayout->addWidget(frameDisplayLabel);
     rightLayout->addWidget(m_captureButton);
     rightLayout->addWidget(m_xProgressBar);
     rightLayout->addLayout(slidersLayout);
@@ -138,24 +142,9 @@ void Window::setupProgressBars() {
 }
 
 void Window::setupCameraWidget() {
-    m_videoWidget = new QVideoWidget();
-    
-    // Find available cameras
-    QList<QCameraDevice> cameras = QMediaDevices::videoInputs();
-    if (!cameras.isEmpty()) {
-        m_camera = new QCamera(cameras.first());
-    } else {
-        QMutexLocker locker(&m_logMutex);
-        m_logTextEdit->appendPlainText("Camera not found!");
-        m_camera = new QCamera();
-    }
-
-    m_camera->setFocusMode(QCamera::FocusModeManual);
-    
-    // Set up capture session
-    m_captureSession = new QMediaCaptureSession();
-    m_captureSession->setCamera(m_camera);
-    m_captureSession->setVideoOutput(m_videoWidget);
+    frameDisplayLabel = new QLabel(this);
+    frameDisplayLabel->setMinimumSize(640, 480);
+    frameDisplayLabel->setScaledContents(true);
 }
 
 void Window::setupZoomAndFocusControl(QSlider *zoomSlider, QSlider *focusSlider) {
@@ -217,7 +206,6 @@ void Window::setupTurretSettingsBox(QGroupBox *settingsBox) {
 
 void Window::setupConnections() {
     connect(m_captureButton, &QPushButton::clicked, this, &Window::slotButtonClicked);
-    connect(this, &Window::maxPressesReached, QApplication::instance(), &QApplication::quit);
 }
 
 void Window::keyPressEvent(QKeyEvent *event) {
@@ -297,23 +285,34 @@ void Window::updateProgressBars() {
     }
 }
 
+void Window::updateFrame() {
+    frame = camera->pull_pixmap_from_frame();
+    
+    if (!frame.isNull()) {
+        frameDisplayLabel->setPixmap(frame);
+    }
+}
+
 void Window::slotButtonClicked(bool checked) {
     if (checked) {
         m_captureButton->setText("Stop capturing");
-        m_camera->start();
+
+        camera->run();
+        frameTimer->start(33);
 
         QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Started capturing...");
     } else {
         m_captureButton->setText("Start capturing");
-        m_camera->stop();
+
+        frameTimer->stop();
+        camera->stop();
+
+        frameDisplayLabel->clear();
+        frameDisplayLabel->setStyleSheet("background-color: black;");
 
         QMutexLocker locker(&m_logMutex);
         m_logTextEdit->appendPlainText("Stoped capturing.");
-    }
-    
-    if (++m_buttonPressCounter == 10) {
-        emit maxPressesReached();
     }
 }
 
@@ -327,7 +326,7 @@ void Window::setSpeed(int val) {
 }
 
 void Window::setZoom(int val) {
-    m_camera->zoomTo(val, 1);
+    // m_camera->zoomTo(val, 1);
 
     QMutexLocker locker(&m_logMutex);
     m_logTextEdit->appendPlainText(
@@ -336,36 +335,10 @@ void Window::setZoom(int val) {
 }
 
 void Window::setCameraFocus(int val) {
-    m_camera->setFocusDistance(val);
+    // m_camera->setFocusDistance(val);
 
     QMutexLocker locker(&m_logMutex);
     m_logTextEdit->appendPlainText(
         QString("Camera focus set to: %1").arg(val)
     );
-}
-
-void Window::getCameraFeatures() {
-    QMutexLocker locker(&m_logMutex);
-    QCamera::Features features = m_camera->supportedFeatures();
-    QString featuresStr;
-
-    if (features & QCamera::Feature::ColorTemperature)
-        featuresStr += "ColorTemperature, ";
-    if (features & QCamera::Feature::ExposureCompensation)
-        featuresStr += "ExposureCompensation, ";
-    if (features & QCamera::Feature::IsoSensitivity)
-        featuresStr += "IsoSensitivity, ";
-    if (features & QCamera::Feature::ManualExposureTime)
-        featuresStr += "ManualExposureTime, ";
-    if (features & QCamera::Feature::CustomFocusPoint)
-        featuresStr += "CustomFocusPoint, ";
-    if (features & QCamera::Feature::FocusDistance)
-        featuresStr += "FocusDistance, ";
-
-    if (!featuresStr.isEmpty())
-        featuresStr.chop(2);
-    else
-        featuresStr = "No supported features";
-
-    m_logTextEdit->appendPlainText(featuresStr);
 }

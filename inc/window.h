@@ -1,6 +1,8 @@
 #ifndef WINDOW_H
 #define WINDOW_H
 
+#include "inc/gstreamer.h"
+
 #include <QMainWindow>
 #include <QCamera>
 #include <QCameraDevice>
@@ -14,6 +16,9 @@
 #include <QGroupBox>
 #include <QMutex>
 #include <QSlider>
+#include <QLabel>
+#include <QPixmap>
+#include <QImage>
 
 class QPushButton;
 class QKeyEvent;
@@ -26,13 +31,13 @@ public:
     explicit Window(QWidget *parent = nullptr);
 
 signals:
-    void maxPressesReached();
 
 private slots:
     void slotButtonClicked(bool checked);
     void updateProgressBars();
     void setZoom(int val);
     void setCameraFocus(int val);
+    void updateFrame();
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
@@ -71,9 +76,10 @@ private:
     QPlainTextEdit* m_logTextEdit;
     
     // Camera components
-    QCamera* m_camera;
-    QMediaCaptureSession* m_captureSession;
-    QVideoWidget* m_videoWidget;
+    GstreamerCameraCapture *camera;
+    QPixmap frame;
+    QLabel *frameDisplayLabel;
+    QTimer *frameTimer;
 
     // State variables
     int m_buttonPressCounter;
