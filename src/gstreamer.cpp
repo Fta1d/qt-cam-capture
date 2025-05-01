@@ -292,6 +292,42 @@ QPixmap GstreamerCameraCapture::pull_pixmap_from_frame() {
     }
 }
 
+// Function for frame processing using OpenCV
+Mat GstreamerCameraCapture::process_frame(const Mat &input_frame) {
+    if(input_frame.empty()) {
+        std::cerr << "Error: Empty input frame" << std::endl;
+        return Mat();
+    }
+    Mat processed_frame;
+
+    // Copying input frame for processing
+    if (input_frame.cols > 640 || input_frame.rows > 480) {
+        resize(processed_frame, processed_frame, Size(640, 480));
+    } else {
+        processed_frame = input_frame.clone();
+    }
+
+    // Apply Gaussian blur
+    GaussianBlur(processed_frame, processed_frame, Size(3, 3), 0.8);
+
+    // // Edge detection using Canny algorithm
+    // Mat edges;
+    // Canny(processed_frame, edges, 100, 200);
+
+    // // Find contours
+    // std::vector<std::vector<Point>> contours;
+    // findContours(edges, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+
+    // // Draw contours on the original image
+    // drawContours(processed_frame, contours, -1, Scalar(0, 255, 0), 2);
+
+    // Add text with information
+    // std::string info = "Frame contours: " + std::to_string(contours.size());
+    // putText(processed_frame, info, Point(10, 30), FONT_HERSHEY_SIMPLEX, 0.7, Scalar(0, 0, 255), 2);
+
+    return processed_frame;
+ }
+
 // Function registered for 
 GstFlowReturn new_sample_callback(GstElement *sink, gpointer data) {
     GstreamerCameraCapture *instance = static_cast<GstreamerCameraCapture*>(data);
